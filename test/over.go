@@ -12,10 +12,10 @@ var db *dbx.Database
 func init() {
 	settings := dbx.Settings{
 		DriverName: "mysql",
-		Host:       "172.0.0.1:3306",
+		Host:       "127.0.0.1:3306",
 		User:       "root",
 		Password:   "123456",
-		Database:   "text_db",
+		Database:   "test_db",
 		Options: map[string]string{
 			"parseTime": "true",
 		},
@@ -63,5 +63,19 @@ func UpdateForLock(g Goods) {
 
 	if err != nil {
 		fmt.Println(err)
+	}
+}
+
+//数据库无符号类型+直接更新方案
+func UpdateForUnsigned(g Goods) {
+	update := "update goods_unsigned " +
+		"set remain_amount=remain_amount-?,remain_quantity=remain_quantity-? " +
+		"where envelope_no=?"
+	_, row, err := db.Execute(update, 0.01, 1, g.EnvelopeNo)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if row < 1 {
+		fmt.Println("库存扣减失败")
 	}
 }
