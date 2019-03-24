@@ -42,3 +42,37 @@ func BenchmarkUpdateForUnsigned(b *testing.B) {
 		UpdateForUnsigned(g.Goods)
 	}
 }
+
+//基准测试:乐观锁
+func BenchmarkUpdateForOptimistic(b *testing.B) {
+	g := GoodsSigned{}
+	g.EnvelopeNo = ksuid.New().String()
+	g.RemainQuantity = 100000
+	g.RemainAmount = decimal.NewFromFloat(100000)
+	_, err := db.Insert(g)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for i := 0; i < b.N; i++ {
+		UpdateForOptimistic(g.Goods)
+	}
+}
+
+//基准测试:乐观锁+无符号字段
+func BenchmarkUpdateForOptimisticAndUnsigned(b *testing.B) {
+	g := GoodsUnsigned{}
+	g.EnvelopeNo = ksuid.New().String()
+	g.RemainQuantity = 100000
+	g.RemainAmount = decimal.NewFromFloat(100000)
+	_, err := db.Insert(g)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for i := 0; i < b.N; i++ {
+		UpdateForOptimisticAndUnsigned(g.Goods)
+	}
+}

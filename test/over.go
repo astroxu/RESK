@@ -36,8 +36,8 @@ func UpdateForLock(g Goods) {
 		//第一步：锁定需要修改的资源，也就是需要修改的数据行
 		//编写事务锁查询语句，使用for update子句来锁定资源
 		query := "select * from goods " +
-			"where envelope_no=? " +
-			"for update"
+			" where envelope_no=? " +
+			" for update"
 		out := &GoodsSigned{}
 		ok, err := runner.Get(out, query, g.EnvelopeNo)
 		if !ok || err != nil {
@@ -49,9 +49,9 @@ func UpdateForLock(g Goods) {
 		remainQuantity := out.RemainQuantity - 1
 		//第三步：执行更新
 		update := "update goods" +
-			"set remain_amount=?,remain_quantity=? " +
-			"where envelope_no=?"
-		_, row, err := db.Execute(update, remainAmount, remainQuantity)
+			" set remain_amount=?,remain_quantity=? " +
+			" where envelope_no=?"
+		_, row, err := db.Execute(update, remainAmount, remainQuantity, g.EnvelopeNo)
 		if err != nil {
 			return err
 		}
@@ -69,9 +69,41 @@ func UpdateForLock(g Goods) {
 //数据库无符号类型+直接更新方案
 func UpdateForUnsigned(g Goods) {
 	update := "update goods_unsigned " +
-		"set remain_amount=remain_amount-?,remain_quantity=remain_quantity-? " +
-		"where envelope_no=?"
+		" set remain_amount=remain_amount-?,remain_quantity=remain_quantity-? " +
+		" where envelope_no=?"
 	_, row, err := db.Execute(update, 0.01, 1, g.EnvelopeNo)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if row < 1 {
+		fmt.Println("库存扣减失败")
+	}
+}
+
+//乐观锁方案
+func UpdateForOptimistic(g Goods) {
+	update := "update goods " +
+		" set remain_amount=remain_amount-?,remain_quantity=remain_quantity-? " +
+		" where envelope_no=? " +
+		" and remain_amount>=? " +
+		" and remain_quantity>=? "
+	_, row, err := db.Execute(update, 0.01, 1, g.EnvelopeNo, 0.01, 1)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if row < 1 {
+		fmt.Println("库存扣减失败")
+	}
+}
+
+//乐观锁方案
+func UpdateForOptimisticAndUnsigned(g Goods) {
+	update := "update goods_unsigned " +
+		" set remain_amount=remain_amount-?,remain_quantity=remain_quantity-? " +
+		" where envelope_no=? " +
+		" and remain_amount>=? " +
+		" and remain_quantity>=? "
+	_, row, err := db.Execute(update, 0.01, 1, g.EnvelopeNo, 0.01, 1)
 	if err != nil {
 		fmt.Println(err)
 	}
